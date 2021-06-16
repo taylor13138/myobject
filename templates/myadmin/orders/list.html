@@ -1,0 +1,162 @@
+{% extends 'myadmin/base.html' %}
+{% load static from staticfiles %}
+
+{% block main_body %}
+
+    <div class="container">
+        <div class="col-md-12">
+            <div class="panel panel-danger">
+                <div class="panel-heading">
+                    <span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span> 订 单 列 表
+                    <a type="button" href="{{url}}"  class="btn btn-warning btn-sm">刷 &nbsp; 新</a>
+                </div>
+            <div class="box-body table-responsive no-padding">
+                <table class="table table-striped">
+                        <tr>
+                            <th width="60">订单号</th>
+                            <th>会员</th>
+                            <th>用餐日期</th>
+{#                            <th>用餐时段</th>#}
+                            <th>金额</th>
+                            <th>付款方式</th>
+                            <th>订单状态</th>
+                            <th>支付状态</th>
+                            <th>下单时间</th>
+                            <th>操作</th>
+                        </tr>
+                        {% for vo in orderslist %}
+                        <tr class="oid{{vo.id}}">
+                            <td>{{ vo.id }}</td>
+                            <td>{{vo.membername}}</td>
+                            <td>{{vo.shopname}}</td>
+{#                            <td>早上</td>#}
+                            <td class="price">{{vo.money}}</td>
+                            <td>微信</td> 
+                            <td>
+                                {% if vo.status == 1 %}
+                                  <span style="color:green">制作中</span>
+                                {% elif vo.status == 2 %}
+                                  <span style="color:red">无效</span>
+                                {% elif vo.status == 3 %}
+                                  <span style="color:red">已完成</span>
+                                {% else %}
+                                  <span style="color:red">未知状态</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if vo.payment_status == 1 %}
+                                  <span style="color:red">未支付</span>
+                                {% elif vo.payment_status == 2 %}
+                                  <span style="color:green">已支付</span>
+                                {% elif vo.payment_status == 3 %}
+                                  <span style="color:red">已退款</span>
+                                {% else %}
+                                  <span style="color:red">未知状态</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ vo.create_at|date:'Y-m-d H:i:s' }}</td>
+                            <td>
+                                <button type="button" onclick="doShow({{vo.id}})" class="btn btn-warning btn-xs" role="button"><span class="glyphicon glyphicon-search" aria-hidden="true"></span> 详情</button>
+                                {% if vo.status == 1%} 
+                                <button type="button" onclick="doChangeStatus({{vo.id}},3)" class="btn btn-info btn-xs" role="button"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> 完成</button> 
+                                <button type="button" onclick="doChangeStatus({{vo.id}},2)" class="btn btn-danger btn-xs" role="button"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> 删除</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                </table>
+            </div>
+                <div class="panel-footer" style="height:50px">
+                    <div style="width:120px;float:left;margin:5px 0px;">合计：<span style="color:red;font-weight:bold;">{{maxpages}}</span> 页</div>
+                    <nav aria-label="Page navigation" class="text-right">
+                      <ul class="pagination" style="margin:0px;">
+                        <li><a href="{% url 'myadmin_orders_index' pIndex|add:-1 %}"><span aria-hidden="true">&laquo;</span></a></li>
+                        {% for p in plist %}
+                          <li {% if pIndex == p %}class="active"{% endif %}><a href="{% url 'myadmin_orders_index' p %}">{{ p }}</a></li>
+                        {% endfor %}
+                        <li><a href="{% url 'myadmin_orders_index' pIndex|add:1 %}"><span aria-hidden="true">&raquo;</span></a></li>
+                      </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">订单详情</h4>
+          </div>
+          <div class="modal-body">
+            <table class="table table-hover">
+                <tr>
+                    <th>序号</th>
+                    <th>菜品名称</th>
+                    <th>单价</th>
+                    <th>数量</th>
+                    <th>小计</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>梅菜扣肉+番茄鸡蛋</td>
+                    <td>25</td>
+                    <td>2</td>
+                    <td>50</td>
+                    <td>正常</td>
+                    <td><button>删除</button></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>肉沫酸豆角</td>
+                    <td>15</td>
+                    <td>1</td>
+                    <td>15</td>
+                    <td>正常</td>
+                    <td><button>删除</button></td>
+                </tr>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            <!--button type="button" class="btn btn-primary">保存</button-->
+          </div>
+        </div>
+      </div>
+    </div>
+{% endblock %}
+
+{% block loadjavascript %}
+    <script type="text/javascript">
+        function doShow(id){ 
+            $.ajax({
+                type:'get',
+                url:"{% url 'myadmin_orders_detail' %}",
+                dataType:'text',
+                data:{oid:id},
+                async: false,
+                success:function(res){
+                    $("#myModal div.modal-body").empty().append(res);
+                    $('#myModal').modal({keyboard:false})
+                },
+            });
+        }
+
+        function doChangeStatus(id,s){
+            var info = ["","","确定要删除订单吗？","确定要完成此订单吗？"];
+            if(window.confirm(info[s])){
+                $.get("{% url 'myadmin_orders_status' %}",{oid:id,status:s},function(data){
+                    if(data == "Y"){
+                        $("tr.oid"+id).remove();
+                    }else{
+                        alert("订单处理失败！");
+                    }
+                },'text');
+            }
+        }
+    </script>
+{% endblock %}
